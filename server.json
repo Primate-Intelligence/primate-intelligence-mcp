@@ -1,0 +1,51 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "ai.primateintelligence/mcp",
+  "description": "Video scene understanding for AI agents via the Primate Vision API.",
+  "repository": {
+    "url": "https://github.com/Primate-Intelligence/primate-intelligence-mcp",
+    "source": "github"
+  },
+  "version": "0.1.3",
+  "websiteUrl": "https://primateintelligence.ai/docs/agents",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@primate-intelligence/mcp",
+      "version": "0.1.3",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "PRIMATE_API_KEY",
+          "description": "Primate Vision API key (get a free one at https://primateintelligence.ai/docs/agents)",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        }
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.primateintelligence.ai/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {PRIMATE_API_KEY}",
+          "variables": {
+            "PRIMATE_API_KEY": {
+              "description": "Primate Vision API key (get a free test key instantly: POST https://api.primateintelligence.ai/v1/sandbox)",
+              "isRequired": true,
+              "isSecret": true,
+              "format": "string"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
