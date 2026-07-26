@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "primate-intelligence": {
+      "command": "npx",
+      "args": ["-y", "@primate-intelligence/mcp"],
+      "env": {
+        "PRIMATE_API_KEY": "${PRIMATE_API_KEY}"
+      }
+    }
+  }
+}
