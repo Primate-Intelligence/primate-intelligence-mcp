@@ -52,21 +52,25 @@ In Claude.ai / Claude Desktop: **Settings → Connectors → Add custom connecto
 |---|---|:--:|
 | `create_video_from_url` | Register a video from a public https URL (`POST /v1/videos`) | — |
 | `create_analysis` | Ask a question about a video (`POST /v1/analyses`) | — |
+| `validate_analysis` | Dry-run a prompt: assessability + cost estimate, zero credits (`validate_only: true`) | ✓ |
+| `create_analysis_batch` | 2–10 prompts on one video; each after the first billed at 50% (`POST /v1/analyses/batch`) | — |
 | `get_analysis` | Fetch analysis status/result (`GET /v1/analyses/{id}`) | ✓ |
-| `wait_for_analysis` | Poll until terminal state, return the final analysis | ✓ |
+| `wait_for_analysis` | Poll until terminal state; returns `{ analysis, retry }` | ✓ |
 | `list_models` | List available models (`GET /v1/models`) | ✓ |
 | `get_usage` | Credit balance + period meters (`GET /v1/usage`) | ✓ |
+| `get_credits` | Balance + per-analysis transaction ledger (`GET /v1/credits`) | ✓ |
 | `get_test_fixture` | Stable fixture for integration self-verification (`GET /v1/test-fixture`) | ✓ |
 
-Every tool carries MCP annotations (`title`, `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`). No tool deletes data. Tool descriptions and schemas mirror the OpenAPI document at [`GET /v1/openapi.json`](https://api.primateintelligence.ai/v1/openapi.json) — the spec is the source of truth.
+Every tool carries MCP annotations (`title`, `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`), declares an `outputSchema`, and returns `structuredContent` conforming to it. No tool deletes data. Tool descriptions and schemas mirror the OpenAPI document at [`GET /v1/openapi.json`](https://api.primateintelligence.ai/v1/openapi.json) — the spec is the source of truth.
 
 ## Typical agent flow
 
 1. `get_test_fixture` → verify the integration works (test keys return deterministic results, no quota burn)
 2. `create_video_from_url` with the video URL
-3. `create_analysis` with a question — *"Is there a person in this video?"*
-4. `wait_for_analysis` → `result.answer` (`yes` | `no` | `indeterminate`) + `result.confidence` + `result.clips`
-5. On `insufficient_credits`: call `get_usage`, report the balance, point the human at billing
+3. `validate_analysis` → confirm the prompt is assessable + preview `estimated_cost_usd` (free)
+4. `create_analysis` with the question — *"Is there a person in this video?"* — or `create_analysis_batch` for several
+5. `wait_for_analysis` → `result.answer` (`yes` | `no` | `indeterminate`) + `result.confidence` + `result.clips` + `result.detected_count` (count queries) + `result.indeterminate_reason`
+6. On `insufficient_credits`: call `get_credits`, report the balance + recent debits, point the human at billing
 
 ## Security contract
 

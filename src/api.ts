@@ -43,7 +43,7 @@ export async function api<T>(
     method,
     headers: {
       Authorization: `Bearer ${apiKey()}`,
-      'User-Agent': 'primate-intelligence-mcp/0.1.0',
+      'User-Agent': 'primate-intelligence-mcp/0.2.0',
       ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
       ...headers,
     },

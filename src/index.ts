@@ -12,29 +12,44 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { TOOLS, describeError } from './tools.js';
+import { TOOL_OUTPUT_SCHEMAS } from './schemas.js';
+
+export const MCP_SERVER_VERSION = '0.2.0';
 
 export function buildServer(): McpServer {
   const server = new McpServer({
     name: 'primate-intelligence',
-    version: '0.1.0',
+    version: MCP_SERVER_VERSION,
   });
 
   for (const tool of TOOLS) {
-    // 5-arg overload: (name, description, paramsSchema, annotations, cb) —
-    // annotations carry the directory-required title + readOnlyHint/destructiveHint.
-    server.tool(tool.name, tool.description, tool.schema, tool.annotations, async (args: Record<string, unknown>) => {
-      try {
-        const result = await tool.handler(args as never);
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
-        };
-      } catch (e) {
-        return {
-          isError: true,
-          content: [{ type: 'text' as const, text: describeError(e) }],
-        };
-      }
-    });
+    // registerTool (MCP spec 2025-06-18+): declares inputSchema AND
+    // outputSchema; results carry structuredContent conforming to it (the SDK
+    // validates every non-error result at runtime). annotations carry the
+    // directory-required title + readOnlyHint/destructiveHint.
+    server.registerTool(
+      tool.name,
+      {
+        description: tool.description,
+        inputSchema: tool.schema,
+        outputSchema: TOOL_OUTPUT_SCHEMAS[tool.name],
+        annotations: tool.annotations,
+      },
+      async (args: Record<string, unknown>) => {
+        try {
+          const result = await tool.handler(args as never);
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+            structuredContent: result as Record<string, unknown>,
+          };
+        } catch (e) {
+          return {
+            isError: true,
+            content: [{ type: 'text' as const, text: describeError(e) }],
+          };
+        }
+      },
+    );
   }
   return server;
 }
