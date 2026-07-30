@@ -3,7 +3,7 @@
 [![npm](https://img.shields.io/npm/v/@primate-intelligence/mcp.svg)](https://www.npmjs.com/package/@primate-intelligence/mcp)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-MCP ([Model Context Protocol](https://modelcontextprotocol.io)) server for the **[Primate Vision API](https://primateintelligence.ai/docs)** by [Primate Intelligence](https://primateintelligence.ai).
+MCP ([Model Context Protocol](https://modelcontextprotocol.io)) server for the **Primate Vision video analysis API** — a video understanding API by [Primate Intelligence](https://primateintelligence.ai) ([docs](https://primateintelligence.ai/docs) · [llms.txt](https://primateintelligence.ai/llms.txt)).
 
 Gives AI agents **video scene understanding** as tools: register a video, ask a question in plain English, get a deterministic answer with a confidence score and clip timestamps. No hallucinated descriptions — the answer is `yes` / `no` / `indeterminate` with evidence.
 
