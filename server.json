@@ -6,14 +6,14 @@
     "url": "https://github.com/Primate-Intelligence/primate-intelligence-mcp",
     "source": "github"
   },
-  "version": "0.2.0",
+  "version": "0.3.0",
   "websiteUrl": "https://primateintelligence.ai/docs/agents",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@primate-intelligence/mcp",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "transport": {
         "type": "stdio"
       },
