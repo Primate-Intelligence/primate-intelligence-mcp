@@ -23,6 +23,7 @@ import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { MCP_SERVER_VERSION } from './index.js';
 
 const SERVER_BIN = resolve(new URL('.', import.meta.url).pathname, '../dist/index.js');
 const ENV = { ...process.env, PRIMATE_API_KEY: 'pv_test_dummy' };
@@ -46,14 +47,21 @@ function spawnServer() {
   });
 
   const lines: string[] = [];
-  const waiters: Array<(line: string) => void> = [];
+  const waiters: Array<{ resolve: (line: string) => void; reject: (err: Error) => void }> = [];
 
   const rl = createInterface({ input: proc.stdout! });
   rl.on('line', (line) => {
     if (line.trim() === '') return;
     const waiter = waiters.shift();
-    if (waiter) waiter(line);
+    if (waiter) waiter.resolve(line);
     else lines.push(line);
+  });
+
+  proc.on('close', (code) => {
+    const err = new Error(`Server process exited unexpectedly (code ${code})`);
+    for (const waiter of waiters.splice(0)) {
+      waiter.reject(err);
+    }
   });
 
   const readLine = (): Promise<string> =>
@@ -64,9 +72,15 @@ function spawnServer() {
         () => reject(new Error('timeout waiting for server response')),
         5000,
       );
-      waiters.push((line) => {
-        clearTimeout(timer);
-        resolve(line);
+      waiters.push({
+        resolve: (line) => {
+          clearTimeout(timer);
+          resolve(line);
+        },
+        reject: (err) => {
+          clearTimeout(timer);
+          reject(err);
+        },
       });
     });
 
@@ -75,6 +89,7 @@ function spawnServer() {
   };
 
   const kill = () => {
+    rl.close();
     try {
       proc.kill();
     } catch {
@@ -121,7 +136,7 @@ describe('Legacy 2025 era (initialize handshake)', () => {
       expect(msg.id).toBe(1);
       expect(msg.result).toBeDefined();
       expect(msg.result.serverInfo.name).toBe('primate-intelligence');
-      expect(msg.result.serverInfo.version).toBe('0.3.0');
+      expect(msg.result.serverInfo.version).toBe(MCP_SERVER_VERSION);
       expect(msg.result.protocolVersion).toBe('2025-03-26');
     },
     10_000,
@@ -210,7 +225,7 @@ describe('Modern 2026-07-28 era (server/discover handshake)', () => {
       expect(msg.result._meta?.['io.modelcontextprotocol/serverInfo']?.name).toBe(
         'primate-intelligence',
       );
-      expect(msg.result._meta?.['io.modelcontextprotocol/serverInfo']?.version).toBe('0.3.0');
+      expect(msg.result._meta?.['io.modelcontextprotocol/serverInfo']?.version).toBe(MCP_SERVER_VERSION);
     },
     10_000,
   );
