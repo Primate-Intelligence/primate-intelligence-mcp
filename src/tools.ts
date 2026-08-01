@@ -27,7 +27,7 @@ export interface ToolDef<Shape extends z.ZodRawShape = z.ZodRawShape> {
   description: string;
   annotations: ToolAnnotations;
   schema: Shape;
-  handler: (args: z.objectOutputType<Shape, z.ZodTypeAny>) => Promise<unknown>;
+  handler: (args: Record<string, unknown>) => Promise<unknown>;
 }
 
 /** Format API errors so agents can self-correct (code + docs_url + retryability). */
@@ -67,7 +67,7 @@ export const TOOLS: ToolDef[] = [
       'Supports video/mp4 and video/quicktime, max 2 GiB. Returns the video resource with its id (video_…).',
     schema: {
       url: z.string().url().describe('Public https URL of the video to ingest (https only, port 443).'),
-      metadata: z.record(z.string()).optional().describe('Optional key-value metadata to attach.'),
+      metadata: z.record(z.string(), z.string()).optional().describe('Optional key-value metadata to attach.'),
     },
     handler: (args) => api('POST', '/v1/videos', { url: args.url, metadata: args.metadata }),
   },
@@ -91,7 +91,7 @@ export const TOOLS: ToolDef[] = [
       video_id: z.string().describe('The video to analyze (video_… id from create_video_from_url).'),
       prompt: z.string().max(2000).describe('Free-text question about the video, e.g. "Is there a person in this video?"'),
       model: z.string().optional().describe('Model id (see list_models). Defaults to the current default model.'),
-      metadata: z.record(z.string()).optional().describe('Optional key-value metadata to attach.'),
+      metadata: z.record(z.string(), z.string()).optional().describe('Optional key-value metadata to attach.'),
     },
     handler: (args) =>
       api('POST', '/v1/analyses', {
@@ -148,7 +148,7 @@ export const TOOLS: ToolDef[] = [
       prompts: z.array(z.string().min(1).max(2000)).min(2).max(10)
         .describe('2–10 free-text prompts. First is full price; each additional is billed at 50%.'),
       model: z.string().optional().describe('Model id (see list_models). Defaults to the current default model.'),
-      metadata: z.record(z.string()).optional().describe('Optional key-value metadata attached to every analysis in the batch.'),
+      metadata: z.record(z.string(), z.string()).optional().describe('Optional key-value metadata attached to every analysis in the batch.'),
     },
     handler: (args) =>
       api('POST', '/v1/analyses/batch', {
@@ -198,7 +198,7 @@ export const TOOLS: ToolDef[] = [
       timeout_s: z.number().int().min(1).max(600).optional().describe('Max seconds to wait (default 120).'),
     },
     handler: async (args) => {
-      const timeoutMs = (args.timeout_s ?? 120) * 1000;
+      const timeoutMs = ((args.timeout_s as number | undefined) ?? 120) * 1000;
       const deadline = Date.now() + timeoutMs;
       let analysis = await api<Analysis>('GET', `/v1/analyses/${args.analysis_id}`);
       while (!TERMINAL.has(analysis.status)) {

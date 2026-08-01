@@ -12,10 +12,10 @@
  *   - `server/discover` requires _meta with both:
  *       "io.modelcontextprotocol/protocolVersion": "2026-07-28"
  *       "io.modelcontextprotocol/clientCapabilities": {}
- *   - `tools/list` currently returns error -32603 in both eras because the
- *     server uses zod v3 outputSchema while @modelcontextprotocol/server@2.0.0
- *     requires zod >=4.2.0 for outputSchema conversion. The tests assert the
- *     actual server response rather than an idealized behaviour.
+ *   - `tools/list` returns 10 tools in deterministic order (zod v4 upgrade
+ *     fixed the SDK v2 JSON Schema conversion that previously threw -32603).
+ *   - Modern tools/list result includes: resultType, ttlMs, cacheScope at
+ *     the top level of result (not nested under a cacheHints object).
  */
 
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -128,13 +128,8 @@ describe('Legacy 2025 era (initialize handshake)', () => {
   );
 
   it(
-    'tools/list after notifications/initialized → error -32603 (zod v3 outputSchema incompatibility with SDK v2)',
+    'tools/list after notifications/initialized → 10 tools in deterministic order',
     async () => {
-      // The server registers outputSchema using zod v3 schemas, but the
-      // @modelcontextprotocol/server@2.0.0 SDK requires zod >=4.2.0 to
-      // convert them to JSON Schema. As a result, tools/list returns -32603.
-      // When outputSchema is removed or upgraded to zod v4, this test should
-      // be updated to assert the 10-tool list in deterministic order.
       const server = spawnServer();
       kill = server.kill;
 
@@ -159,10 +154,21 @@ describe('Legacy 2025 era (initialize handshake)', () => {
 
       expect(msg.jsonrpc).toBe('2.0');
       expect(msg.id).toBe(2);
-      // The SDK throws when encountering zod v3 outputSchema; assert the error code.
-      expect(msg.error).toBeDefined();
-      expect(msg.error.code).toBe(-32603);
-      expect(msg.error.message).toContain('zod 3');
+      expect(msg.result).toBeDefined();
+      expect(Array.isArray(msg.result.tools)).toBe(true);
+      expect(msg.result.tools).toHaveLength(10);
+      expect(msg.result.tools.map((t: { name: string }) => t.name)).toEqual([
+        'create_video_from_url',
+        'create_analysis',
+        'validate_analysis',
+        'create_analysis_batch',
+        'get_analysis',
+        'wait_for_analysis',
+        'list_models',
+        'get_usage',
+        'get_credits',
+        'get_test_fixture',
+      ]);
     },
     10_000,
   );
@@ -210,12 +216,8 @@ describe('Modern 2026-07-28 era (server/discover handshake)', () => {
   );
 
   it(
-    'modern tools/list after server/discover → error -32603 (zod v3 outputSchema incompatibility)',
+    'modern tools/list after server/discover → 10 tools with resultType and cache hints',
     async () => {
-      // Same root cause as the legacy era: outputSchema uses zod v3, which
-      // the SDK v2 cannot convert. The test asserts the actual wire response.
-      // resultType and cacheHints (ttlMs / cacheScope) on tools/list cannot
-      // be verified until the outputSchema issue is resolved.
       const server = spawnServer();
       kill = server.kill;
 
@@ -239,9 +241,26 @@ describe('Modern 2026-07-28 era (server/discover handshake)', () => {
 
       expect(msg.jsonrpc).toBe('2.0');
       expect(msg.id).toBe(2);
-      expect(msg.error).toBeDefined();
-      expect(msg.error.code).toBe(-32603);
-      expect(msg.error.message).toContain('zod 3');
+      expect(msg.result).toBeDefined();
+      expect(Array.isArray(msg.result.tools)).toBe(true);
+      expect(msg.result.tools).toHaveLength(10);
+      expect(msg.result.tools.map((t: { name: string }) => t.name)).toEqual([
+        'create_video_from_url',
+        'create_analysis',
+        'validate_analysis',
+        'create_analysis_batch',
+        'get_analysis',
+        'wait_for_analysis',
+        'list_models',
+        'get_usage',
+        'get_credits',
+        'get_test_fixture',
+      ]);
+      // Cache hints and resultType appear at the top level of result in the
+      // 2026-07-28 era (not nested under a cacheHints object).
+      expect(msg.result.resultType).toBe('complete');
+      expect(msg.result.ttlMs).toBe(3_600_000);
+      expect(msg.result.cacheScope).toBe('private');
     },
     10_000,
   );
