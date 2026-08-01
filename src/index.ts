@@ -15,7 +15,7 @@ import { z } from 'zod';
 import { TOOLS, describeError } from './tools.js';
 import { TOOL_OUTPUT_SCHEMAS } from './schemas.js';
 
-export const MCP_SERVER_VERSION = '0.3.0';
+export const MCP_SERVER_VERSION = '0.4.0';
 
 export function buildServer(): McpServer {
   const server = new McpServer(

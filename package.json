@@ -1,6 +1,6 @@
 {
   "name": "@primate-intelligence/mcp",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "mcpName": "ai.primateintelligence/mcp",
   "description": "MCP server for the Primate Vision API (Primate Intelligence) \u2014 video scene understanding tools for AI agents.",
   "license": "MIT",
